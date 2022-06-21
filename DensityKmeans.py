@@ -9,7 +9,6 @@ from sklearn.cluster import KMeans
 class DensityKmeans:
     def __init__(self, data):
         self.data = data
-        self.eps = NumberClusterFinder(data).find()
         self.min_pts = NumberClusterFinder(data).findMinPts()
         self.cluster_value = None
         self.dbscan = None
@@ -19,6 +18,20 @@ class DensityKmeans:
         self.remain_point = []
         self.center_point = None
         self.labels_ = None
+        self.generateEps()
+        self.kmeans = None
+
+    def generateEps(self):
+        n = 2
+        labelsNumber = -1
+        while labelsNumber <= 0:
+            self.eps = NumberClusterFinder(self.getData()).find(n)
+            self.dbscan = DBSCAN(eps=self.getEps(), min_samples=self.min_pts)
+            self.dbscan.fit(self.getData())
+            labelsNumber = self.dbscan.labels_.max()
+            # print("labelsNumber")
+            # print(labelsNumber)
+            n += 1
 
     def getData(self):
         return self.data
@@ -104,9 +117,15 @@ class DensityKmeans:
         for i, vi in enumerate(all_data):
             for j, vj in enumerate(vi):
                 result.append(vj)
+
         arrays_dens = np.array(result)
+
         self.dense_point = arrays_dens[np.where(arrays_dens[:, len(arrays_dens[0, :]) - 1] >= 3)]
         self.low_dense_point = arrays_dens[np.where(arrays_dens[:, len(arrays_dens[0, :]) - 1] < 3)]
+        # print("self.dense_point")
+        # print(self.dense_point)
+        # print("self.low_dense_point")
+        # print(self.low_dense_point)
 
     def cleaningLowDensePoint(self):
         low_dense_point = self.getLowDensePoint()
@@ -116,13 +135,21 @@ class DensityKmeans:
                 if dist(zval, value) < self.getEps():
                     self.delete_point.append(value)
 
+        # print("len(self.getData())")
+        # print(len(self.getData()))
+        # print("len(self.delete_point)")
+        # print(len(self.delete_point))
         for key, value in enumerate(self.getData()):
             length = 0
             for dkey, dval in enumerate(self.delete_point):
-                if (dval != value).all():
+                if (dval == value).all():
+                    continue
+                else:
                     length += 1
             if length == len(self.delete_point):
                 self.remain_point.append(value)
+        # print("self.remain_point")
+        # print(self.remain_point)
         self.remain_point = np.array(self.remain_point)
 
     def findCenterPointCluster(self, cluster_values, cluster_number):
@@ -148,9 +175,15 @@ class DensityKmeans:
         self.center_point = np.array(self.center_point)
 
     def kmeansClustering(self):
-        kmeans = KMeans(n_clusters=len(self.getCenterPoint()), init=self.getCenterPoint(), n_init=1)
+        kmeans = KMeans(n_clusters=len(self.getCenterPoint()), init=self.getCenterPoint(),
+                        n_init=1)
+        # kmeans = KMeans(n_clusters=len(self.getCenterPoint()), init='k-means++')
         kmeans.fit(self.getData())
+        self.kmeans = kmeans
         return kmeans.labels_
+
+    def getKmeans(self):
+        return self.kmeans
 
     def fit(self):
         self.GenerateClusterValue()
