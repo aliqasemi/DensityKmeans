@@ -12,7 +12,10 @@ class NumberClusterFinder:
         return self.data
 
     def findMinPts(self):
-        return int(len(self.data) / 200)
+        if len(self.data) > 200:
+            return int(len(self.data) / 200)
+        else:
+            return 3
 
     def generateDistance(self):
         neigh = NearestNeighbors(n_neighbors=self.findMinPts())
@@ -25,7 +28,7 @@ class NumberClusterFinder:
     def getDistances(self):
         return self.distances
 
-    def findDiffStd(self):
+    def findDiffStd(self, n=3):
         diff = np.array([])
         for key, value in enumerate(self.distances):
             if key != len(self.distances) - 1:
@@ -34,15 +37,15 @@ class NumberClusterFinder:
         diffStd = diff.std()
 
         for key, value in enumerate(diff):
-            if value > 3 * diffStd:
+            if value > n * diffStd:
                 self.eps = self.distances[key]
                 break
 
     def getEps(self):
         return self.eps
 
-    def find(self):
+    def find(self, n=3):
         self.findMinPts()
         self.generateDistance()
-        self.findDiffStd()
+        self.findDiffStd(n=n)
         return self.getEps()
